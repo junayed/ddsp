@@ -15,18 +15,45 @@
 # Lint as: python3
 """Tests for ddsp.losses."""
 
+from absl.testing import parameterized
 from ddsp import losses
 import numpy as np
 import tensorflow.compat.v2 as tf
 
 
-class SpectralLossTest(tf.test.TestCase):
+class SpectralLossTest(parameterized.TestCase, tf.test.TestCase):
 
-  def test_output_shape_is_correct(self):
-    loss_obj = losses.SpectralLoss()
+  @parameterized.named_parameters(
+      ('mag', 1, 0, 0, 0, 0, 0, 0),
+      ('d_time', 0, 1, 0, 0, 0, 0, 0),
+      ('dd_time', 0, 0, 1, 0, 0, 0, 0),
+      ('d_freq', 0, 0, 0, 1, 0, 0, 0),
+      ('dd_freq', 0, 0, 0, 0, 1, 0, 0),
+      ('logmag', 0, 0, 0, 0, 0, 1, 0),
+      ('loudness', 0, 0, 0, 0, 0, 0, 1),
+      ('all', 1, 1, 1, 1, 1, 1, 1),
+  )
+  def test_output_shape_is_correct(self,
+                                   mag_weight,
+                                   delta_time_weight,
+                                   delta_delta_time_weight,
+                                   delta_freq_weight,
+                                   delta_delta_freq_weight,
+                                   logmag_weight,
+                                   loudness_weight):
+    """Test correct shape for a variety of loss weightings."""
+    loss_obj = losses.SpectralLoss(
+        mag_weight=mag_weight,
+        delta_time_weight=delta_time_weight,
+        delta_delta_time_weight=delta_delta_time_weight,
+        delta_freq_weight=delta_freq_weight,
+        delta_delta_freq_weight=delta_delta_freq_weight,
+        logmag_weight=logmag_weight,
+        loudness_weight=loudness_weight,
+    )
 
-    input_audio = tf.random.uniform((3, 16000), dtype=tf.float32)
-    target_audio = tf.random.uniform((3, 16000), dtype=tf.float32)
+    input_audio = tf.random.uniform((3, 8000), dtype=tf.float32)
+    target_audio = tf.random.uniform((3, 8000), dtype=tf.float32)
 
     loss = loss_obj(input_audio, target_audio)
 
